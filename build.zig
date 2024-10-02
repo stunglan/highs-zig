@@ -30,8 +30,8 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "highsclient",
-        .root_source_file = b.path("src/main.zig"),
+        .name = "call_highs_from_zig",
+        .root_source_file = b.path("src/call_highs_from_zig.zig"),
         .target = target,
         .optimize = optimize,
     });

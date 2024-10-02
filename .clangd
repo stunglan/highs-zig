@@ -1,2 +1,3 @@
 CompileFlags:                     # Tweak the parse settings
   Add: [-include-directory=/Users/KTUN/src/github/stunglan/HiGHS/src/]
+  Add: [-include-directory=/Users/KTUN/src/github/stunglan/HiGHS/src/interfaces]

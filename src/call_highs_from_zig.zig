@@ -4,7 +4,7 @@ const assert = @import("std").debug.assert;
 const highs = @import("highs.zig");
 
 // Mimic the functionality in call_highs_from_c_minimal
-fn minimal_api() void {
+fn minimal_api() !void {
     std.log.info("trying minimal  ", .{});
     // The HighsInt type is either int or long, depending on the HiGHS build
     const num_col = 2;
@@ -43,6 +43,7 @@ fn minimal_api() void {
     var model_status: i32 = 0;
     var run_status: i32 = 0;
 
+    std.log.info("Minimize", .{});
     run_status =
         highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
@@ -55,9 +56,40 @@ fn minimal_api() void {
 
     objective_value = offset;
 
-    std.log.info("\nRun status = {d}; Model status = {d}", .{ run_status, model_status });
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
 
     objective_value = offset;
+
+    // Report the column primal and dual values, and basis status
+    for (0.., col_value, col_dual, col_basis_status, col_cost) |i, value, dual, basis_status, cost| {
+        std.log.info("Col%{d} = {d}; dual = {d}; status = {d}", .{ i, value, dual, basis_status });
+        objective_value += value * cost;
+    }
+
+    // Report the row primal and dual values, and basis status
+    for (0.., row_value, row_dual, row_basis_status) |i, value, dual, basis_status| {
+        std.log.info("Row%{d} = {d}; dual = {d}; status = {d}", .{ i, value, dual, basis_status });
+    }
+
+    std.log.info("Optimal objective value = {d}", .{objective_value});
+
+    // switch to maximum
+
+    std.log.info("Maximize", .{});
+    sense = highs.kHighsObjSenseMaximize;
+    run_status =
+        highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+
+    if (run_status != highs.kHighsStatusOk) {
+        std.log.err("Error in run_status {}", .{run_status});
+    }
+    if (model_status != highs.kHighsModelStatusOptimal) {
+        std.log.err("Error in run_status {}", .{model_status});
+    }
+
+    objective_value = offset;
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
 
     // Report the column primal and dual values, and basis status
     for (0.., col_value, col_dual, col_basis_status, col_cost) |i, value, dual, basis_status, cost| {
@@ -70,9 +102,39 @@ fn minimal_api() void {
         std.log.info("Row%{d} = {d}; dual = {d}; status = {d}", .{ i, value, dual, basis_status });
     }
 
-    std.log.info("Optimal objective value = {}", .{objective_value});
+    std.log.info("Optimal objective value = {d}", .{objective_value});
 
-    sense = highs.kHighsObjSenseMaximize;
+    // switch to maximum
+
+    // Indicate that the optimal solution for both columns must be
+    // integer valued and solve the model as a MIP
+
+    var integrality = [2]i32{ 1, 1 };
+
+    run_status = highs.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
+    if (run_status != highs.kHighsStatusOk) {
+        std.log.err("Error in run_status {}", .{run_status});
+    }
+    if (model_status != highs.kHighsModelStatusOptimal) {
+        std.log.err("Error in run_status {}", .{model_status});
+    }
+
+    objective_value = offset;
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+    // Report the column primal and dual values, and basis status
+    for (0.., col_value, col_basis_status, col_cost) |i, value, basis_status, cost| {
+        std.log.info("Col%{d} = {d}; status = {d}", .{ i, value, basis_status });
+        objective_value += value * cost;
+    }
+
+    // Report the row primal and dual values, and basis status
+    for (0.., row_value, row_basis_status) |i, value, basis_status| {
+        std.log.info("Row%{d} = {d}; status = {d}", .{ i, value, basis_status });
+    }
+
+    std.log.info("Optimal objective value = {d}", .{objective_value});
 
     return;
 }
@@ -81,7 +143,7 @@ pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.log.info("All your {s} are belong to us.", .{"loving"});
 
-    minimal_api();
+    try minimal_api();
 }
 
 test "simple test" {

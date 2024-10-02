@@ -127,6 +127,10 @@ pub fn Highs_lpCall_zig(num_col: i32, num_row: HighsInt, num_nz: HighsInt, a_for
     return chighs.Highs_lpCall(num_col, num_row, num_nz, a_format, sense, offset, col_cost.ptr, col_lower.ptr, col_upper.ptr, row_lower.ptr, row_upper.ptr, a_start.ptr, a_index.ptr, a_value.ptr, col_value.ptr, col_dual.ptr, row_value.ptr, row_dual.ptr, col_basis_status.ptr, row_basis_status.ptr, model_status);
 }
 
+pub fn Highs_mipCall_zig(num_col: HighsInt, num_row: HighsInt, num_nz: HighsInt, a_format: HighsInt, sense: HighsInt, offset: f64, col_cost: []const f64, col_lower: []const f64, col_upper: []const f64, row_lower: []const f64, row_upper: []const f64, a_start: []const HighsInt, a_index: []const HighsInt, a_value: []const f64, integrality: []const HighsInt, col_value: []f64, row_value: []f64, model_status: *HighsInt) i32 {
+    return chighs.Highs_mipCall(num_col, num_row, num_nz, a_format, sense, offset, col_cost.ptr, col_lower.ptr, col_upper.ptr, row_lower.ptr, row_upper.ptr, a_start.ptr, a_index.ptr, a_value.ptr, integrality.ptr, col_value.ptr, row_value.ptr, model_status);
+}
+
 pub export fn add(a: i32, b: i32) i32 {
     return a + b;
 }
