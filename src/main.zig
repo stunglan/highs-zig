@@ -5,7 +5,7 @@ const highs = @import("highs.zig");
 
 // Mimic the functionality in call_highs_from_c_minimal
 fn minimal_api() void {
-
+    std.log.info("trying minimal  ", .{});
     // The HighsInt type is either int or long, depending on the HiGHS build
     const num_col = 2;
     const num_row = 3;
@@ -79,9 +79,7 @@ fn minimal_api() void {
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.", .{"loving"});
-
-    std.debug.print("{}", .{highs.add(1, 2)});
+    std.log.info("All your {s} are belong to us.", .{"loving"});
 
     minimal_api();
 }

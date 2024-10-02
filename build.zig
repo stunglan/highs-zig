@@ -37,16 +37,26 @@ pub fn build(b: *std.Build) void {
     });
 
     // add highs TODO: clone highs and compile
+
+    const highs_dir = "../HiGHS/";
+    //std.log.info("does {s} exist??", .{highs_dir});
+    if (std.fs.cwd().openDir(highs_dir, .{})) |_| {
+        std.log.info("{s} exist!", .{highs_dir});
+    } else |err| {
+        std.log.info("Cannot find {s}, please download and compile HiGHS: {} ", .{ highs_dir, err });
+        std.posix.exit(1);
+    }
+
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-    exe.addLibraryPath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/build/lib" });
+    exe.addLibraryPath(.{ .cwd_relative = "../HiGHS/build/lib" });
     exe.linkSystemLibrary("highs");
 
     exe.linkLibCpp();
     exe.linkLibC();
-    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src/interfaces" });
-    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src" });
-    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/build" });
-    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src" });
+    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src/interfaces" });
+    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
+    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/build" });
+    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
