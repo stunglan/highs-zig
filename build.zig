@@ -36,18 +36,17 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // add highs TODO: clone highs and compile
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
     exe.addLibraryPath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/build/lib" });
     exe.linkSystemLibrary("highs");
 
-    // add cbc
     exe.linkLibCpp();
     exe.linkLibC();
-    exe.addIncludePath(b.path("src"));
-    exe.addIncludePath(b.path("src/interfaces"));
+    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src/interfaces" });
+    exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src" });
     exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/build" });
     exe.addIncludePath(.{ .cwd_relative = "/Users/KTUN/src/github/stunglan/HiGHS/src" });
-    //exe.addCSourceFile(.{ .file = b.path("src/call_higgs_from_c_minimal.c"), .flags = &.{} });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
