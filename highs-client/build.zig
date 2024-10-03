@@ -15,52 +15,30 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    // const lib = b.addStaticLibrary(.{
-    //     .name = "highszig",
-    //     // In this case the main source file is merely a path, however, in more
-    //     // complicated build scripts, this could be a generated file.
-    //     .root_source_file = b.path("src/highs.zig"),
-    //     .target = target,
-    //     .optimize = optimize,
-    // });
-
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    //b.installArtifact(lib);
-
-    const exe = b.addExecutable(.{
-        .name = "call_highs_from_zig",
-        .root_source_file = b.path("src/call_highs_from_zig.zig"),
+    const lib = b.addStaticLibrary(.{
+        .name = "highs-client",
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    const cham = b.dependency("chameleon", .{});
-    exe.root_module.addImport("chameleon", cham.module("chameleon"));
+    // This declares intent for the library to be installed into the standard
+    // location when the user invokes the "install" step (the default step when
+    // running `zig build`).
+    b.installArtifact(lib);
 
-    // add highs TODO: clone highs and compile
+    const exe = b.addExecutable(.{
+        .name = "highs-client",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
-    const highs_dir = "../HiGHS/";
-    //std.log.info("does {s} exist??", .{highs_dir});
-    if (std.fs.cwd().openDir(highs_dir, .{})) |_| {
-        std.log.info("{s} exist!", .{highs_dir});
-    } else |err| {
-        std.log.info("Cannot find {s}, please download and compile HiGHS: {} ", .{ highs_dir, err });
-        std.posix.exit(1);
-    }
+    const highs_dep = b.dependency("highs_zig", .{});
 
-    // linking
-    exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-    exe.addLibraryPath(.{ .cwd_relative = "../HiGHS/build/lib" });
-    exe.linkSystemLibrary("highs");
-
-    exe.linkLibCpp();
-    exe.linkLibC();
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src/interfaces" });
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/build" });
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
+    exe.root_module.addImport("highs_zig", highs_dep.module("highs_zig"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

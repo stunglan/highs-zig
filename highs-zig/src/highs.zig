@@ -127,9 +127,11 @@ pub fn Highs_qpCall_zig(num_col: HighsInt, num_row: HighsInt, num_nz: HighsInt, 
 }
 
 pub export fn add(a: i32, b: i32) i32 {
+    std.log.info("HI FROM ME", .{});
     return a + b;
 }
 
 test "basic add functionality" {
     try testing.expect(add(3, 7) == 10);
+    try testing.expect(add(3, 8) == 11);
 }

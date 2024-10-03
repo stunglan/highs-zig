@@ -4,7 +4,6 @@ const assert = @import("std").debug.assert;
 const highs_api = @cImport({
     @cInclude("highs_c_api.h");
 });
-const chameleon = @import("chameleon");
 
 const HighsInt = highs_api.HighsInt;
 
@@ -66,13 +65,7 @@ fn minimal_api() !void {
     // column-wise matrix.
     //
     // The HighsInt type is either int or long, depending on the HiGHS build
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-    var c = chameleon.initRuntime(.{ .allocator = allocator });
-    defer c.deinit();
 
-    try c.green().bold().printOut("Hello, world!\n", .{});
     std.log.info("\nTrying minimal  ", .{});
     // The HighsInt type is either int or long, depending on the HiGHS build
     const num_col = 2;
