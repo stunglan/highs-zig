@@ -3,6 +3,8 @@ const expect = @import("std").testing.expect;
 const assert = @import("std").debug.assert;
 const highs = @import("highs.zig");
 
+const HighsInt = highs.HighsInt;
+
 // Mimic the functionality in call_highs_from_c_minimal
 fn minimal_api() !void {
     // This illustrates the use of Highs_lpCall, the simple C interface to
@@ -69,7 +71,7 @@ fn minimal_api() !void {
 
     // Define the optimization sense and objective offset
     //var sense = highs.kHighsObjSenseMinimize;
-    var sense = highs.kHighsObjSenseMinimize;
+    var sense: HighsInt = highs.kHighsObjSenseMinimize;
     const offset: f64 = 3;
 
     // Define the column costs, lower bounds and upper bounds
@@ -83,8 +85,8 @@ fn minimal_api() !void {
 
     // Define the constraint matrix column-wise
     const a_format = highs.kHighsMatrixFormatColwise;
-    var a_start = [2]i32{ 0, 2 };
-    var a_index = [5]i32{ 1, 2, 0, 1, 2 };
+    var a_start = [2]HighsInt{ 0, 2 };
+    var a_index = [5]HighsInt{ 1, 2, 0, 1, 2 };
     var a_value = [5]f64{ 1.0, 3.0, 1.0, 2.0, 2.0 };
 
     var objective_value: f64 = 0;
@@ -93,13 +95,13 @@ fn minimal_api() !void {
     var row_value = [_]f64{0.0} ** num_row;
     var row_dual = [_]f64{0.0} ** num_row;
 
-    var col_basis_status = [_]i32{0.0} ** num_col;
-    var row_basis_status = [_]i32{0.0} ** num_row;
+    var col_basis_status = [_]HighsInt{0.0} ** num_col;
+    var row_basis_status = [_]HighsInt{0.0} ** num_row;
 
-    var model_status: i32 = 0;
-    var run_status: i32 = 0;
+    var model_status: HighsInt = 0;
+    var run_status: HighsInt = 0;
 
-    std.log.info("Minimize", .{});
+    std.log.info("\nMinimize", .{});
     run_status =
         highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
@@ -110,11 +112,11 @@ fn minimal_api() !void {
         std.log.err("Error in run_status {}", .{model_status});
     }
 
-    objective_value = offset;
-
     std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
 
-    objective_value = offset;
+    for (0..num_col) |i| {
+        objective_value += col_value[i] * col_cost[i];
+    }
 
     // Report the column primal and dual values, and basis status
     for (0.., col_value, col_dual, col_basis_status, col_cost) |i, value, dual, basis_status, cost| {
@@ -131,7 +133,7 @@ fn minimal_api() !void {
 
     // switch to maximum
 
-    std.log.info("Maximize", .{});
+    std.log.info("\nMaximize", .{});
     sense = highs.kHighsObjSenseMaximize;
     run_status =
         highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
@@ -165,7 +167,7 @@ fn minimal_api() !void {
     // Indicate that the optimal solution for both columns must be
     // integer valued and solve the model as a MIP
 
-    var integrality = [2]i32{ 1, 1 };
+    var integrality = [2]HighsInt{ 1, 1 };
 
     run_status = highs.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
     if (run_status != highs.kHighsStatusOk) {
@@ -210,7 +212,7 @@ fn minimal_api_qp() !void {
 
     // Define the optimization sense and objective offset
     //var sense = highs.kHighsObjSenseMinimize;
-    const sense = highs.kHighsObjSenseMinimize;
+    const sense: HighsInt = highs.kHighsObjSenseMinimize;
     const offset: f64 = 0;
 
     // Define the column costs, lower bounds and upper bounds
@@ -222,17 +224,17 @@ fn minimal_api_qp() !void {
     var row_lower = [1]f64{1};
     var row_upper = [1]f64{1.0e30};
     // Define the constraint matrix row-wise
-    const a_format: i32 = highs.kHighsMatrixFormatRowwise;
-    const a_start = [2]i32{ 0, 3 };
-    const a_index = [3]i32{ 0, 1, 2 };
-    const a_value = [3]f64{ 1.0, 1.0, 1.0 };
+    const a_format: HighsInt = highs.kHighsMatrixFormatRowwise;
+    var a_start = [2]HighsInt{ 0, 3 };
+    var a_index = [3]HighsInt{ 0, 1, 2 };
+    var a_value = [3]f64{ 1.0, 1.0, 1.0 };
 
     // Define the constraint matrix column-wise
     const q_format = highs.kHighsHessianFormatTriangular;
-    const q_num_nz: i32 = 4;
-    var q_start = [2]i32{ 0, 3 };
-    var q_index = [3]i32{ 0, 1, 2 };
-    var q_value = [3]f64{ 1, 1, 1 };
+    const q_num_nz: HighsInt = 4;
+    var q_start = [3]HighsInt{ 0, 2, 3 };
+    var q_index = [4]HighsInt{ 0, 2, 1, 2 };
+    var q_value = [4]f64{ 2, -1, 0.2, 2 };
 
     var objective_value: f64 = undefined;
     var col_value = [_]f64{undefined} ** num_col;
@@ -240,11 +242,11 @@ fn minimal_api_qp() !void {
     var row_value = [_]f64{undefined} ** num_row;
     var row_dual = [_]f64{undefined} ** num_row;
 
-    var col_basis_status = [_]i32{undefined} ** num_col;
-    var row_basis_status = [_]i32{undefined} ** num_row;
+    var col_basis_status = [_]HighsInt{undefined} ** num_col;
+    var row_basis_status = [_]HighsInt{undefined} ** num_row;
 
-    var model_status: i32 = 0;
-    var run_status: i32 = 0;
+    var model_status: HighsInt = 0;
+    var run_status: HighsInt = 0;
 
     run_status = highs.Highs_qpCall_zig(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
     if (run_status != highs.kHighsStatusOk) {
@@ -256,21 +258,24 @@ fn minimal_api_qp() !void {
 
     std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
 
-    // Compute the objective value
     objective_value = offset;
-    // Report the column primal and dual values, and basis status
-    for (0.., col_value) |i, value| {
-        const from_el: i32 = q_start[i];
-        const to_el = if (i + 1 < num_col)
-            q_start[i + 1]
-        else
-            q_num_nz;
+    // First loop: Add the linear terms
+    for (0..num_col) |i| {
+        objective_value += col_value[i] * col_cost[i];
+    }
+
+    // Second loop: Add the quadratic terms
+    for (0..num_col) |i| {
+        const from_el: usize = @intCast(q_start[i]);
+        const to_el: usize = @intCast(if (i + 1 < num_col) q_start[i + 1] else q_num_nz);
+
         for (from_el..to_el) |el| {
-            const j = q_index[el];
-            objective_value += 0.5 * value * col_value[j] * q_value[el];
+            const j: usize = @intCast(q_index[el]);
+            objective_value += 0.5 * col_value[i] * col_value[j] * q_value[el];
         }
     }
 
+    // print values
     for (0.., col_value, col_dual) |i, value, dual| {
         std.log.info("Col%{d} = {d}; dual = {d}", .{ i, value, dual });
     }
