@@ -1,9 +1,9 @@
 const std = @import("std");
 const expect = @import("std").testing.expect;
 const assert = @import("std").debug.assert;
-const highs = @import("highs.zig");
+const highs_api = @import("highs.zig");
 
-const HighsInt = highs.HighsInt;
+const HighsInt = highs_api.HighsInt;
 
 // Mimic the functionality in call_highs_from_c_minimal
 fn minimal_api() !void {
@@ -71,7 +71,7 @@ fn minimal_api() !void {
 
     // Define the optimization sense and objective offset
     //var sense = highs.kHighsObjSenseMinimize;
-    var sense: HighsInt = highs.kHighsObjSenseMinimize;
+    var sense: HighsInt = highs_api.kHighsObjSenseMinimize;
     const offset: f64 = 3;
 
     // Define the column costs, lower bounds and upper bounds
@@ -84,7 +84,7 @@ fn minimal_api() !void {
     var row_upper = [3]f64{ 7.0, 15.0, 1.0e30 };
 
     // Define the constraint matrix column-wise
-    const a_format = highs.kHighsMatrixFormatColwise;
+    const a_format = highs_api.kHighsMatrixFormatColwise;
     var a_start = [2]HighsInt{ 0, 2 };
     var a_index = [5]HighsInt{ 1, 2, 0, 1, 2 };
     var a_value = [5]f64{ 1.0, 3.0, 1.0, 2.0, 2.0 };
@@ -101,14 +101,14 @@ fn minimal_api() !void {
     var model_status: HighsInt = 0;
     var run_status: HighsInt = 0;
 
-    std.log.info("\nMinimize", .{});
+    std.log.info("Minimize", .{});
     run_status =
-        highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
-    if (run_status != highs.kHighsStatusOk) {
+    if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
-    if (model_status != highs.kHighsModelStatusOptimal) {
+    if (model_status != highs_api.kHighsModelStatusOptimal) {
         std.log.err("Error in run_status {}", .{model_status});
     }
 
@@ -133,15 +133,15 @@ fn minimal_api() !void {
 
     // switch to maximum
 
-    std.log.info("\nMaximize", .{});
-    sense = highs.kHighsObjSenseMaximize;
+    std.log.info("Maximize", .{});
+    sense = highs_api.kHighsObjSenseMaximize;
     run_status =
-        highs.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
-    if (run_status != highs.kHighsStatusOk) {
+    if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
-    if (model_status != highs.kHighsModelStatusOptimal) {
+    if (model_status != highs_api.kHighsModelStatusOptimal) {
         std.log.err("Error in run_status {}", .{model_status});
     }
 
@@ -169,11 +169,11 @@ fn minimal_api() !void {
 
     var integrality = [2]HighsInt{ 1, 1 };
 
-    run_status = highs.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
-    if (run_status != highs.kHighsStatusOk) {
+    run_status = highs_api.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
+    if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
-    if (model_status != highs.kHighsModelStatusOptimal) {
+    if (model_status != highs_api.kHighsModelStatusOptimal) {
         std.log.err("Error in run_status {}", .{model_status});
     }
 
@@ -212,7 +212,7 @@ fn minimal_api_qp() !void {
 
     // Define the optimization sense and objective offset
     //var sense = highs.kHighsObjSenseMinimize;
-    const sense: HighsInt = highs.kHighsObjSenseMinimize;
+    const sense: HighsInt = highs_api.kHighsObjSenseMinimize;
     const offset: f64 = 0;
 
     // Define the column costs, lower bounds and upper bounds
@@ -224,13 +224,13 @@ fn minimal_api_qp() !void {
     var row_lower = [1]f64{1};
     var row_upper = [1]f64{1.0e30};
     // Define the constraint matrix row-wise
-    const a_format: HighsInt = highs.kHighsMatrixFormatRowwise;
+    const a_format: HighsInt = highs_api.kHighsMatrixFormatRowwise;
     var a_start = [2]HighsInt{ 0, 3 };
     var a_index = [3]HighsInt{ 0, 1, 2 };
     var a_value = [3]f64{ 1.0, 1.0, 1.0 };
 
     // Define the constraint matrix column-wise
-    const q_format = highs.kHighsHessianFormatTriangular;
+    const q_format = highs_api.kHighsHessianFormatTriangular;
     const q_num_nz: HighsInt = 4;
     var q_start = [3]HighsInt{ 0, 2, 3 };
     var q_index = [4]HighsInt{ 0, 2, 1, 2 };
@@ -248,11 +248,11 @@ fn minimal_api_qp() !void {
     var model_status: HighsInt = 0;
     var run_status: HighsInt = 0;
 
-    run_status = highs.Highs_qpCall_zig(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
-    if (run_status != highs.kHighsStatusOk) {
+    run_status = highs_api.Highs_qpCall_zig(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+    if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
-    if (model_status != highs.kHighsModelStatusOptimal) {
+    if (model_status != highs_api.kHighsModelStatusOptimal) {
         std.log.err("Error in run_status {}", .{model_status});
     }
 
@@ -275,7 +275,6 @@ fn minimal_api_qp() !void {
         }
     }
 
-    // print values
     for (0.., col_value, col_dual) |i, value, dual| {
         std.log.info("Col%{d} = {d}; dual = {d}", .{ i, value, dual });
     }
@@ -284,6 +283,33 @@ fn minimal_api_qp() !void {
     }
     std.log.info("Optimal objective value = {d}", .{objective_value});
 }
+
+// fn minimal_api_mps() !void {
+//     // Illustrate the minimal interface for reading an mps file. Assumes
+//     // that the model file is check/instances/avgas.mps
+
+//     const filename = "../HiGHS/check/instances/avgas.mps";
+//     // Create a Highs instance
+//     var highs = try highs_api.Highs_create();
+//     defer highs.Highs_destroy();
+
+//     var run_status: c_int = highs_api.Highs_readModel(filename);
+//     try std.testing.expect(run_status == highs.kHighsStatusOk);
+
+//     run_status = highs_api.Highs_run();
+//     try std.testing.expect(run_status == highs.kHighsStatusOk);
+
+//     var model_status: c_int = highs_api.Highs_getModelStatus();
+//     try std.testing.expect(model_status == highs.kHighsModelStatusOptimal);
+
+//     std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+//     var objective_function_value: f64 = 0;
+//     highs_api.Highs_getDoubleInfoValue("objective_function_value", &objective_function_value);
+//     std.log.info("Optimal objective value = {g}", .{objective_function_value});
+
+//     try std.testing.expect(@floatAbs(objective_function_value + 7.75) < 1e-5);
+// }
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
