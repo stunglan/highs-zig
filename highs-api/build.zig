@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     // 'b.addModule()' creates a public module that can be imported by other build scripts.
 
     // Smaller modules that can be imported individually:
-    const highs_mod = b.addModule("highs_zig", .{
+    const highs_mod = b.addModule("highs_api", .{
         .root_source_file = b.path("src/highs.zig"),
     });
 
@@ -42,8 +42,9 @@ pub fn build(b: *std.Build) void {
 
     // add highs TODO: depend on an installation of HiGHSclone highs and compile
 
-    const highs_dir = "../HiGHS/src/interfaces/highs_c_api.h";
-    const chackHighs = b.addCheckFile(b.path(highs_dir), .{});
+    const highs_dir = "../../HiGHS/";
+    const interface_file = highs_dir ++ "src/interfaces/highs_c_api.h";
+    const chackHighs = b.addCheckFile(b.path(interface_file), .{});
     chackHighs.setName("install and compile HiGHS at ..");
 
     // This declares intent for the library to be installed into the standard
@@ -66,45 +67,16 @@ pub fn build(b: *std.Build) void {
 
     // linking
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-    exe.addLibraryPath(.{ .cwd_relative = "../HiGHS/build/lib" });
+    exe.addLibraryPath(.{ .cwd_relative = highs_dir ++ "build/lib" });
     exe.linkSystemLibrary("highs");
     exe.linkLibCpp();
     exe.linkLibC();
 
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src/interfaces" });
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
-    exe.addIncludePath(.{ .cwd_relative = "../HiGHS/build" });
+    exe.addIncludePath(.{ .cwd_relative = highs_dir ++ "src/interfaces" });
+    exe.addIncludePath(.{ .cwd_relative = highs_dir ++ "src" });
+    exe.addIncludePath(.{ .cwd_relative = highs_dir ++ "build" });
 
     b.installArtifact(exe);
-
-    // the standard example for calling highs
-
-    const exe2 = b.addExecutable(.{
-        .name = "call_highs_from_zig",
-        .root_source_file = b.path("src/call_highs_from_zig.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    exe2.step.dependOn(&chackHighs.step);
-
-    // linking
-    exe2.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-    exe2.addLibraryPath(.{ .cwd_relative = "../HiGHS/build/lib" });
-    exe2.linkSystemLibrary("highs");
-    exe2.linkLibCpp();
-    exe2.linkLibC();
-
-    exe2.addIncludePath(.{ .cwd_relative = "../HiGHS/src/interfaces" });
-    exe2.addIncludePath(.{ .cwd_relative = "../HiGHS/src" });
-    exe2.addIncludePath(.{ .cwd_relative = "../HiGHS/build" });
-
-    b.installArtifact(exe);
-
-    // This declares intent for the executable to be installed into the
-    // standard location when the user invokes the "install" step (the default
-    // step when running `zig build`).
-    b.installArtifact(exe2);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish

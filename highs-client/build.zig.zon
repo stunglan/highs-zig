@@ -51,8 +51,8 @@
         //    // actually used.
         //    .lazy = false,
         //},
-        .highs_zig = .{
-            .path = "../highs-zig",
+        .highs_api = .{
+            .path = "../highs-api",
         },
     },
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const highs = @import("highs_zig");
+const highs = @import("highs_api");
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)

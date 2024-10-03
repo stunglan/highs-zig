@@ -36,9 +36,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const highs_dep = b.dependency("highs_zig", .{});
+    const highs_dep = b.dependency("highs_api", .{});
 
-    exe.root_module.addImport("highs_zig", highs_dep.module("highs_zig"));
+    exe.root_module.addImport("highs_api", highs_dep.module("highs_api"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
