@@ -177,7 +177,7 @@ fn minimal_api() !void {
     // Indicate that the optimal solution for both columns must be
     // integer valued and solve the model as a MIP
 
-    var integrality = [2]HighsInt{ 1, 1 };
+    const integrality = [2]HighsInt{ 1, 1 };
 
     run_status = highs_api.Highs_mipCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
     if (run_status != highs_api.kHighsStatusOk) {
@@ -256,6 +256,7 @@ fn minimal_api_qp() !void {
     var row_basis_status = [_]HighsInt{undefined} ** num_row;
 
     var model_status: HighsInt = 0;
+    _ = &model_status;
     var run_status: HighsInt = 0;
 
     run_status = highs_api.Highs_qpCall(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
@@ -323,6 +324,262 @@ fn minimal_api_mps() !void {
     try std.testing.expect(@abs(objective_function_value + 7.75) < 1e-5);
 }
 
+fn full_api() !void {
+    // Assuming HighsInt is c_int
+
+    std.log.info("HiGHS version {s}", .{highs_api.Highs_version()});
+    std.log.info("      Major version {d}", .{highs_api.Highs_versionMajor()});
+    std.log.info("      Minor version {d}", .{highs_api.Highs_versionMinor()});
+    std.log.info("      Patch version {d}", .{highs_api.Highs_versionPatch()});
+    std.log.info("      Githash {s}", .{highs_api.Highs_githash()});
+
+    const num_col: HighsInt = 2;
+    const num_row: HighsInt = 3;
+    const num_nz: HighsInt = 5;
+    const sense: HighsInt = highs_api.kHighsObjSenseMinimize;
+    const offset: f64 = 3.0;
+
+    const col_cost = [_]f64{ 1.0, 1.0 };
+    const col_lower = [_]f64{ 0.0, 1.0 };
+    const col_upper = [_]f64{ 4.0, 1.0e30 };
+    const row_lower = [_]f64{ -1.0e30, 5.0, 6.0 };
+    const row_upper = [_]f64{ 7.0, 15.0, 1.0e30 };
+    const a_format: HighsInt = highs_api.kHighsMatrixFormatColwise;
+    const a_start = [_]HighsInt{ 0, 2 };
+    const a_index = [_]HighsInt{ 1, 2, 0, 1, 2 };
+    const a_value = [_]f64{ 1.0, 3.0, 1.0, 2.0, 2.0 };
+
+    var run_status: HighsInt = 0;
+    var model_status: HighsInt = 0;
+    var objective_function_value: f64 = 0;
+    var simplex_iteration_count: HighsInt = 0;
+    var mip_node_count: i64 = 0;
+    var primal_solution_status: HighsInt = 0;
+    var dual_solution_status: HighsInt = 0;
+    var basis_validity: HighsInt = 0;
+
+    var highs = highs_api.Highs_create();
+    defer highs_api.Highs_destroy(highs);
+    _ = &highs; // get rid to errormessage do I need this TODO: check if needed
+
+    run_status = highs_api.Highs_passLp(highs, num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value);
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+
+    run_status = highs_api.Highs_run(highs);
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+
+    model_status = highs_api.Highs_getModelStatus(highs);
+    try std.testing.expect(model_status == highs_api.kHighsModelStatusOptimal);
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+    _ = highs_api.Highs_getDoubleInfoValue(highs, "objective_function_value", &objective_function_value);
+    _ = highs_api.Highs_getIntInfoValue(highs, "simplex_iteration_count", &simplex_iteration_count);
+    _ = highs_api.Highs_getIntInfoValue(highs, "primal_solution_status", &primal_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "dual_solution_status", &dual_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "basis_validity", &basis_validity);
+
+    try std.testing.expect(primal_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(dual_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(basis_validity == highs_api.kHighsBasisValidityValid);
+
+    var col_value = try std.heap.c_allocator.alloc(f64, num_col);
+    defer std.heap.c_allocator.free(col_value);
+    _ = &col_value;
+    var col_dual = try std.heap.c_allocator.alloc(f64, num_col);
+    _ = &col_dual;
+    defer std.heap.c_allocator.free(col_dual);
+    var row_value = try std.heap.c_allocator.alloc(f64, num_row);
+    _ = &row_value;
+    defer std.heap.c_allocator.free(row_value);
+    var row_dual = try std.heap.c_allocator.alloc(f64, num_row);
+    _ = &row_dual;
+    defer std.heap.c_allocator.free(row_dual);
+
+    var col_basis_status = try std.heap.c_allocator.alloc(HighsInt, num_col);
+    defer std.heap.c_allocator.free(col_basis_status);
+    _ = &col_basis_status;
+    var row_basis_status = try std.heap.c_allocator.alloc(HighsInt, num_row);
+    _ = &row_basis_status;
+    defer std.heap.c_allocator.free(row_basis_status);
+
+    _ = highs_api.Highs_getSolution(highs, col_value.ptr, col_dual.ptr, row_value.ptr, row_dual.ptr);
+    _ = highs_api.Highs_getBasis(highs, col_basis_status.ptr, row_basis_status.ptr);
+
+    for (0..num_col) |i| {
+        std.log.info("Col{d} = {d}; dual = {d}; status = {d}", .{ i, col_value[i], col_dual[i], col_basis_status[i] });
+    }
+    for (0..num_row) |i| {
+        std.log.info("Row{d} = {d}; dual = {d}; status = {d}", .{ i, row_value[i], row_dual[i], row_basis_status[i] });
+    }
+    std.log.info("Objective value = {d}; Iteration count = {d}", .{ objective_function_value, simplex_iteration_count });
+
+    var check_sense: HighsInt = 0;
+    run_status = highs_api.Highs_getObjectiveSense(highs, &check_sense);
+    try std.testing.expect(run_status == 0);
+    std.log.info("LP problem has objective sense = {d}", .{check_sense});
+    try std.testing.expect(check_sense == sense);
+
+    _ = highs_api.Highs_changeObjectiveSense(highs, highs_api.kHighsObjSenseMaximize);
+
+    run_status = highs_api.Highs_run(highs);
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+
+    model_status = highs_api.Highs_getModelStatus(highs);
+    try std.testing.expect(model_status == highs_api.kHighsModelStatusOptimal);
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+    _ = highs_api.Highs_getDoubleInfoValue(highs, "objective_function_value", &objective_function_value);
+    _ = highs_api.Highs_getIntInfoValue(highs, "simplex_iteration_count", &simplex_iteration_count);
+    _ = highs_api.Highs_getIntInfoValue(highs, "primal_solution_status", &primal_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "dual_solution_status", &dual_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "basis_validity", &basis_validity);
+
+    try std.testing.expect(primal_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(dual_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(basis_validity == highs_api.kHighsBasisValidityValid);
+
+    _ = highs_api.Highs_getSolution(highs, col_value.ptr, col_dual.ptr, row_value.ptr, row_dual.ptr);
+    _ = highs_api.Highs_getBasis(highs, col_basis_status.ptr, row_basis_status.ptr);
+
+    for (0..num_col) |i| {
+        std.log.info("Col{d} = {d}; dual = {d}; status = {d}", .{ i, col_value[i], col_dual[i], col_basis_status[i] });
+    }
+    for (0..num_row) |i| {
+        std.log.info("Row{d} = {d}; dual = {d}; status = {d}", .{ i, row_value[i], row_dual[i], row_basis_status[i] });
+    }
+    std.log.info("Objective value = {d}; Iteration count = {d}", .{ objective_function_value, simplex_iteration_count });
+
+    _ = highs_api.Highs_clearModel(
+        highs,
+    );
+
+    const check_num_col = highs_api.Highs_getNumCol(
+        highs,
+    );
+    const check_num_row = highs_api.Highs_getNumRow(
+        highs,
+    );
+    const check_num_nz = highs_api.Highs_getNumNz(
+        highs,
+    );
+    try std.testing.expect(check_num_col == 0);
+    try std.testing.expect(check_num_row == 0);
+    try std.testing.expect(check_num_nz == 0);
+    std.log.info("Cleared model has {d} columns, {d} rows and {d} nonzeros", .{ check_num_col, check_num_row, check_num_nz });
+
+    const ar_start = [_]HighsInt{ 0, 1, 3 };
+    const ar_index = [_]HighsInt{ 1, 0, 1, 0, 1 };
+    const ar_value = [_]f64{ 1.0, 1.0, 2.0, 3.0, 2.0 };
+
+    run_status = highs_api.Highs_addCols(highs, num_col, &col_cost, &col_lower, &col_upper, 0, null, null, null);
+    try std.testing.expect(run_status == 0);
+
+    run_status = highs_api.Highs_addRows(highs, num_row, &row_lower, &row_upper, num_nz, &ar_start, &ar_index, &ar_value);
+    try std.testing.expect(run_status == 0);
+
+    _ = highs_api.Highs_changeObjectiveSense(highs, highs_api.kHighsObjSenseMaximize);
+    _ = highs_api.Highs_changeObjectiveOffset(highs, offset);
+
+    run_status = highs_api.Highs_getObjectiveSense(highs, &check_sense);
+    try std.testing.expect(run_status == 0);
+    std.log.info("LP problem has objective sense = {d}", .{check_sense});
+    try std.testing.expect(check_sense == highs_api.kHighsObjSenseMaximize);
+
+    var option_type: HighsInt = 0;
+    const option_string = "primal_feasibility_tolerance";
+    run_status = highs_api.Highs_getOptionType(highs, option_string, &option_type);
+    std.log.info("Option {s} is of type {d}", .{ option_string, option_type });
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+    try std.testing.expect(option_type == 2);
+
+    var primal_feasibility_tolerance: f64 = 0;
+    _ = highs_api.Highs_getDoubleOptionValue(highs, "primal_feasibility_tolerance", &primal_feasibility_tolerance);
+    std.log.info("primal_feasibility_tolerance = {d}: setting it to 1e-6", .{primal_feasibility_tolerance});
+    primal_feasibility_tolerance = 1e-6;
+    _ = highs_api.Highs_setDoubleOptionValue(highs, "primal_feasibility_tolerance", primal_feasibility_tolerance);
+
+    _ = highs_api.Highs_setBoolOptionValue(highs, "output_flag", 0);
+    std.log.info("Running quietly...", .{});
+    run_status = highs_api.Highs_run(highs);
+    std.log.info("Running loudly...", .{});
+    _ = highs_api.Highs_setBoolOptionValue(highs, "output_flag", 1);
+
+    try std.testing.expect(run_status == 0);
+
+    model_status = highs_api.Highs_getModelStatus(
+        highs,
+    );
+    try std.testing.expect(model_status == highs_api.kHighsModelStatusOptimal);
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+    var info_type: HighsInt = 0;
+    const info_string = "objective_function_value";
+    run_status = highs_api.Highs_getInfoType(highs, info_string, &info_type);
+    std.log.info("Info {s} is of type {d}", .{ info_string, info_type });
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+    try std.testing.expect(info_type == highs_api.kHighsInfoTypeDouble);
+
+    _ = highs_api.Highs_getDoubleInfoValue(highs, "objective_function_value", &objective_function_value);
+    _ = highs_api.Highs_getIntInfoValue(highs, "simplex_iteration_count", &simplex_iteration_count);
+    _ = highs_api.Highs_getIntInfoValue(highs, "primal_solution_status", &primal_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "dual_solution_status", &dual_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "basis_validity", &basis_validity);
+
+    try std.testing.expect(primal_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(dual_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(basis_validity == highs_api.kHighsBasisValidityValid);
+
+    _ = highs_api.Highs_getSolution(highs, col_value.ptr, col_dual.ptr, row_value.ptr, row_dual.ptr);
+    _ = highs_api.Highs_getBasis(highs, col_basis_status.ptr, row_basis_status.ptr);
+
+    for (0..num_col) |i| {
+        std.log.info("Col{d} = {d}; dual = {d}; status = {d}", .{ i, col_value[i], col_dual[i], col_basis_status[i] });
+    }
+    for (0..num_row) |i| {
+        std.log.info("Row{d} = {d}; dual = {d}; status = {d}", .{ i, row_value[i], row_dual[i], row_basis_status[i] });
+    }
+    std.log.info("Objective value = {d}; Iteration count = {d}", .{ objective_function_value, simplex_iteration_count });
+
+    var integrality = [_]HighsInt{ 1, 1 };
+
+    _ = highs_api.Highs_changeColsIntegralityByRange(highs, 0, 1, &integrality);
+
+    _ = highs_api.Highs_setBoolOptionValue(highs, "output_flag", 0);
+    run_status = highs_api.Highs_run(highs);
+    _ = highs_api.Highs_setBoolOptionValue(highs, "output_flag", 1);
+
+    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+
+    model_status = highs_api.Highs_getModelStatus(highs);
+    try std.testing.expect(model_status == highs_api.kHighsModelStatusOptimal);
+
+    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+
+    _ = highs_api.Highs_getDoubleInfoValue(highs, "objective_function_value", &objective_function_value);
+    _ = highs_api.Highs_getIntInfoValue(highs, "simplex_iteration_count", &simplex_iteration_count);
+    _ = highs_api.Highs_getInt64InfoValue(highs, "mip_node_count", &mip_node_count);
+    _ = highs_api.Highs_getIntInfoValue(highs, "primal_solution_status", &primal_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "dual_solution_status", &dual_solution_status);
+    _ = highs_api.Highs_getIntInfoValue(highs, "basis_validity", &basis_validity);
+
+    try std.testing.expect(primal_solution_status == highs_api.kHighsSolutionStatusFeasible);
+    try std.testing.expect(dual_solution_status == highs_api.kHighsSolutionStatusNone);
+    try std.testing.expect(basis_validity == highs_api.kHighsBasisValidityInvalid);
+    try std.testing.expect(mip_node_count == 1);
+
+    _ = highs_api.Highs_getSolution(highs, col_value.ptr, col_dual.ptr, row_value.ptr, row_dual.ptr);
+
+    for (0..num_col) |i| {
+        std.log.info("Col{d} = {d}", .{ i, col_value[i] });
+    }
+    for (0..num_row) |i| {
+        std.log.info("Row{d} = {d}", .{ i, row_value[i] });
+    }
+    std.log.info("Objective value = {d}; Iteration count = {d}", .{ objective_function_value, simplex_iteration_count });
+}
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.log.info("All your {s} are belong to us.", .{"loving"});
@@ -332,6 +589,8 @@ pub fn main() !void {
     try minimal_api_qp();
 
     try minimal_api_mps();
+
+    try full_api();
 }
 
 test "simple test" {
