@@ -1,10 +1,7 @@
 const std = @import("std");
 const expect = @import("std").testing.expect;
 const assert = @import("std").debug.assert;
-const highs_api = @cImport({
-    @cInclude("highs_c_api.h");
-});
-const chameleon = @import("chameleon");
+const highs_api = @import("highs.zig");
 
 const HighsInt = highs_api.HighsInt;
 
@@ -66,14 +63,7 @@ fn minimal_api() !void {
     // column-wise matrix.
     //
     // The HighsInt type is either int or long, depending on the HiGHS build
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-    var c = chameleon.initRuntime(.{ .allocator = allocator });
-    defer c.deinit();
-
-    try c.green().bold().printOut("Hello, world!\n", .{});
-    std.log.info("\nTrying minimal  ", .{});
+    std.log.info("trying minimal  ", .{});
     // The HighsInt type is either int or long, depending on the HiGHS build
     const num_col = 2;
     const num_row = 3;
@@ -113,7 +103,7 @@ fn minimal_api() !void {
 
     std.log.info("Minimize", .{});
     run_status =
-        highs_api.Highs_lpCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
@@ -146,7 +136,7 @@ fn minimal_api() !void {
     std.log.info("Maximize", .{});
     sense = highs_api.kHighsObjSenseMaximize;
     run_status =
-        highs_api.Highs_lpCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
@@ -179,7 +169,7 @@ fn minimal_api() !void {
 
     var integrality = [2]HighsInt{ 1, 1 };
 
-    run_status = highs_api.Highs_mipCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
+    run_status = highs_api.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
@@ -258,7 +248,7 @@ fn minimal_api_qp() !void {
     var model_status: HighsInt = 0;
     var run_status: HighsInt = 0;
 
-    run_status = highs_api.Highs_qpCall(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+    run_status = highs_api.Highs_qpCall_zig(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
@@ -294,34 +284,32 @@ fn minimal_api_qp() !void {
     std.log.info("Optimal objective value = {d}", .{objective_value});
 }
 
-fn minimal_api_mps() !void {
-    // Illustrate the minimal interface for reading an mps file. Assumes
-    // that the model file is check/instances/avgas.mps
-    std.log.info("\ntrying minimal mps ", .{});
+// fn minimal_api_mps() !void {
+//     // Illustrate the minimal interface for reading an mps file. Assumes
+//     // that the model file is check/instances/avgas.mps
 
-    const filename = "../HiGHS/check/instances/avgas.mps";
-    // Create a Highs instance
-    var highs = highs_api.Highs_create();
-    _ = &highs;
-    defer highs_api.Highs_destroy(highs);
+//     const filename = "../HiGHS/check/instances/avgas.mps";
+//     // Create a Highs instance
+//     var highs = try highs_api.Highs_create();
+//     defer highs.Highs_destroy();
 
-    var run_status: c_int = highs_api.Highs_readModel(highs, filename);
-    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+//     var run_status: c_int = highs_api.Highs_readModel(filename);
+//     try std.testing.expect(run_status == highs.kHighsStatusOk);
 
-    run_status = highs_api.Highs_run(highs);
-    try std.testing.expect(run_status == highs_api.kHighsStatusOk);
+//     run_status = highs_api.Highs_run();
+//     try std.testing.expect(run_status == highs.kHighsStatusOk);
 
-    const model_status: c_int = highs_api.Highs_getModelStatus(highs);
-    try std.testing.expect(model_status == highs_api.kHighsModelStatusOptimal);
+//     var model_status: c_int = highs_api.Highs_getModelStatus();
+//     try std.testing.expect(model_status == highs.kHighsModelStatusOptimal);
 
-    std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
+//     std.log.info("Run status = {d}; Model status = {d}", .{ run_status, model_status });
 
-    var objective_function_value: f64 = 0;
-    _ = highs_api.Highs_getDoubleInfoValue(highs, "objective_function_value", &objective_function_value);
-    std.log.info("Optimal objective value = {d}", .{objective_function_value});
+//     var objective_function_value: f64 = 0;
+//     highs_api.Highs_getDoubleInfoValue("objective_function_value", &objective_function_value);
+//     std.log.info("Optimal objective value = {g}", .{objective_function_value});
 
-    try std.testing.expect(@abs(objective_function_value + 7.75) < 1e-5);
-}
+//     try std.testing.expect(@floatAbs(objective_function_value + 7.75) < 1e-5);
+// }
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
@@ -330,8 +318,6 @@ pub fn main() !void {
     try minimal_api();
 
     try minimal_api_qp();
-
-    try minimal_api_mps();
 }
 
 test "simple test" {

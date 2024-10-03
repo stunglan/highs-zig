@@ -15,19 +15,19 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "highszig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/highs.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
+    // const lib = b.addStaticLibrary(.{
+    //     .name = "highszig",
+    //     // In this case the main source file is merely a path, however, in more
+    //     // complicated build scripts, this could be a generated file.
+    //     .root_source_file = b.path("src/highs.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
-    b.installArtifact(lib);
+    //b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
         .name = "call_highs_from_zig",
@@ -35,6 +35,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    const cham = b.dependency("chameleon", .{});
+    exe.root_module.addImport("chameleon", cham.module("chameleon"));
 
     // add highs TODO: clone highs and compile
 
@@ -47,6 +50,7 @@ pub fn build(b: *std.Build) void {
         std.posix.exit(1);
     }
 
+    // linking
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
     exe.addLibraryPath(.{ .cwd_relative = "../HiGHS/build/lib" });
     exe.linkSystemLibrary("highs");
