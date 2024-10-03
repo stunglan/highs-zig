@@ -1,7 +1,9 @@
 const std = @import("std");
 const expect = @import("std").testing.expect;
 const assert = @import("std").debug.assert;
-const highs_api = @import("highs.zig");
+const highs_api = @cImport({
+    @cInclude("highs_c_api.h");
+});
 
 const HighsInt = highs_api.HighsInt;
 
@@ -103,7 +105,7 @@ fn minimal_api() !void {
 
     std.log.info("Minimize", .{});
     run_status =
-        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
@@ -136,7 +138,7 @@ fn minimal_api() !void {
     std.log.info("Maximize", .{});
     sense = highs_api.kHighsObjSenseMaximize;
     run_status =
-        highs_api.Highs_lpCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+        highs_api.Highs_lpCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
 
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
@@ -169,7 +171,7 @@ fn minimal_api() !void {
 
     var integrality = [2]HighsInt{ 1, 1 };
 
-    run_status = highs_api.Highs_mipCall_zig(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
+    run_status = highs_api.Highs_mipCall(num_col, num_row, num_nz, a_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &integrality, &col_value, &row_value, &model_status);
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
@@ -248,7 +250,7 @@ fn minimal_api_qp() !void {
     var model_status: HighsInt = 0;
     var run_status: HighsInt = 0;
 
-    run_status = highs_api.Highs_qpCall_zig(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
+    run_status = highs_api.Highs_qpCall(num_col, num_row, num_nz, q_num_nz, a_format, q_format, sense, offset, &col_cost, &col_lower, &col_upper, &row_lower, &row_upper, &a_start, &a_index, &a_value, &q_start, &q_index, &q_value, &col_value, &col_dual, &row_value, &row_dual, &col_basis_status, &row_basis_status, &model_status);
     if (run_status != highs_api.kHighsStatusOk) {
         std.log.err("Error in run_status {}", .{run_status});
     }
