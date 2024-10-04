@@ -1,1 +1,0 @@
-void mainHIGHS(void);

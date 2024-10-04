@@ -293,7 +293,9 @@ fn minimal_api_mps() !void {
     // that the model file is check/instances/avgas.mps
     std.log.info("\ntrying minimal mps ", .{});
 
-    const filename = "../HiGHS/check/instances/avgas.mps";
+    const highs_dir = "../../HiGHS/";
+
+    const filename = highs_dir ++ "check/instances/avgas.mps";
     // Create a Highs instance
     var highs = highs_api.Highs_create();
     _ = &highs;

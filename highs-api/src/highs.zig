@@ -3,10 +3,13 @@ const std = @import("std");
 const chighs = @cImport({
     @cInclude("highs_c_api.h");
 });
-const testing = std.testing;
 
 pub const HighsInt = chighs.HighsInt;
 pub const HighsUInt = c_uint;
+
+//pub const ObjSense = enum { minimize = chighs.kHighsObjSenseMinimize, maximize = chighs.kHighsObjSenseMaximize };
+
+const testing = std.testing;
 
 pub const kHighsMaximumStringLength = chighs.kHighsMaximumStringLength;
 
@@ -28,8 +31,6 @@ pub const kHighsOptionTypeString = chighs.kHighsOptionTypeString;
 pub const kHighsInfoTypeInt64 = chighs.kHighsInfoTypeInt64;
 pub const kHighsInfoTypeInt = chighs.kHighsInfoTypeInt;
 pub const kHighsInfoTypeDouble = chighs.kHighsInfoTypeDouble;
-pub const kHighsObjSenseMinimize = chighs.kHighsObjSenseMinimize;
-pub const kHighsObjSenseMaximize = chighs.kHighsObjSenseMaximize;
 
 pub const kHighsMatrixFormatColwise = chighs.kHighsMatrixFormatColwise;
 pub const kHighsMatrixFormatRowwise = chighs.kHighsMatrixFormatRowwise;

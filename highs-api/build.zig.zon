@@ -32,6 +32,7 @@
         "build.zig",
         "build.zig.zon",
         "src",
+        "src/highs.zig",
         // For example...
         //"LICENSE",
         //"README.md",
